@@ -1,10 +1,49 @@
-#!/usr/bin/env python3.12
+#!/usr/bin/env python
 
 import sys
 import os
-import whisper
+import subprocess
 import argparse
 from pathlib import Path
+
+def check_and_activate_environment():
+    """Check if we're in the correct conda environment and re-execute if needed."""
+    script_dir = Path(__file__).parent.absolute()
+    env_path = script_dir / "env"
+    
+    # Check if the local conda environment exists
+    if not env_path.exists():
+        print("Error: Local conda environment not found.")
+        print("Please run './setup.sh' first to create the environment.")
+        sys.exit(1)
+    
+    # Check if we're already using the correct Python executable
+    current_python = Path(sys.executable).resolve()
+    expected_python = (env_path / "bin" / "python").resolve()
+    
+    # If we're not using the conda environment's Python, switch to it
+    if current_python != expected_python:
+        print(f"Activating conda environment: {env_path}")
+        if expected_python.exists():
+            # Re-run the script with the conda environment's Python
+            result = subprocess.run([str(expected_python)] + sys.argv, 
+                                  cwd=str(script_dir))
+            sys.exit(result.returncode)
+        else:
+            print("Error: Conda environment Python not found.")
+            print("Please run './setup.sh' to fix the environment.")
+            sys.exit(1)
+
+# Check environment before importing whisper
+check_and_activate_environment()
+
+# Now we can safely import whisper
+try:
+    import whisper
+except ImportError:
+    print("Error: whisper module not found.")
+    print("Please run './setup.sh' to install dependencies.")
+    sys.exit(1)
 
 def generate_subtitles(audio_file, model_size="base"):
     """

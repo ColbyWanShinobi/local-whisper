@@ -53,13 +53,14 @@ def progress_callback(progress):
     bar = '█' * filled_length + '░' * (bar_length - filled_length)
     print(f'\rTranscription Progress: |{bar}| {progress*100:.1f}%', end='', flush=True)
 
-def generate_subtitles(audio_file, model_size="base"):
+def generate_subtitles(audio_file, model_size="base", language="en"):
     """
     Generate subtitle file from audio using Whisper.
 
     Args:
         audio_file (str): Path to the audio file
         model_size (str): Whisper model size (tiny, base, small, medium, large)
+        language (str): Language code for transcription (default: en for English)
     """
     # Check if audio file exists
     if not os.path.exists(audio_file):
@@ -77,10 +78,12 @@ def generate_subtitles(audio_file, model_size="base"):
     start_time = time.time()
     
     # Use verbose=True to get segment-by-segment progress
+    print(f"Language: {language}")
     result = model.transcribe(
         audio_file,
         verbose=True,
-        word_timestamps=False
+        word_timestamps=False,
+        language=language
     )
     
     end_time = time.time()
@@ -121,10 +124,12 @@ def main():
     parser.add_argument('--model', '-m', default='base',
                        choices=['tiny', 'base', 'small', 'medium', 'large'],
                        help='Whisper model size (default: base)')
+    parser.add_argument('--language', '-l', default='en',
+                       help='Language code for transcription (default: en for English). Use "auto" for automatic detection.')
 
     args = parser.parse_args()
 
-    success = generate_subtitles(args.audio_file, args.model)
+    success = generate_subtitles(args.audio_file, args.model, args.language)
 
     if not success:
         sys.exit(1)

@@ -5,6 +5,7 @@ import os
 import subprocess
 import argparse
 from pathlib import Path
+import time
 
 def check_and_activate_environment():
     """Check if we're in the correct conda environment and re-execute if needed."""
@@ -45,6 +46,13 @@ except ImportError:
     print("Please run './setup.sh' to install dependencies.")
     sys.exit(1)
 
+def progress_callback(progress):
+    """Callback function to display transcription progress"""
+    bar_length = 50
+    filled_length = int(bar_length * progress)
+    bar = '█' * filled_length + '░' * (bar_length - filled_length)
+    print(f'\rTranscription Progress: |{bar}| {progress*100:.1f}%', end='', flush=True)
+
 def generate_subtitles(audio_file, model_size="base"):
     """
     Generate subtitle file from audio using Whisper.
@@ -62,9 +70,23 @@ def generate_subtitles(audio_file, model_size="base"):
     print(f"Loading Whisper model ({model_size})...")
     model = whisper.load_model(model_size)
 
-    # Transcribe audio
+    # Transcribe audio with progress callback
     print(f"Transcribing audio file: {audio_file}")
-    result = model.transcribe(audio_file)
+    print("This may take a while depending on file size and model complexity...")
+    
+    start_time = time.time()
+    
+    # Use verbose=True to get segment-by-segment progress
+    result = model.transcribe(
+        audio_file,
+        verbose=True,
+        word_timestamps=False
+    )
+    
+    end_time = time.time()
+    processing_time = end_time - start_time
+    
+    print(f"\nTranscription completed in {processing_time:.1f} seconds")
 
     # Generate subtitle file path (same directory as audio file)
     audio_path = Path(audio_file)
